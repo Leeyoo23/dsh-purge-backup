@@ -1,3 +1,91 @@
+# 1.1.92
+
+## 中文
+
+- 版本 **1.1.92**。
+- **随包技能库并入开源版**：`skills/redteam/*.md` 共 23 条红队技能随包发布（主动扫描、内网 fscan/gogo、隧道、横向、Web 指纹、nuclei、Webshell、反弹 Shell 等）。来源为上游 dsh-purge 项目，经 `mmparko/dsh-purge` 镜像取回，已原样并入并在 `NOTICE` 注明出处。
+- **打包范围**：`package.json` 的 `files` 增加 `skills`，npm 包与 Release 压缩包均包含；插件启动时仍按原逻辑把包内技能同步到 `$DSH_HOME/redteam/skills`，宿主技能目录 `$DSH_HOME/skills` 优先。
+- **知识库说明**：POC/EXP 知识库不是随包文件，而是运行时生成的本地数据库，条目来自本机 nuclei 模板与手工录入；相关代码（`lib/redteam/store-core.js`、`ui.js`、`tools.js`）一直在仓库里，本次无需迁移。
+- **文档**：三份 README 的目录结构与运行时目录同步补上 `skills/`；边界说明写明开源版包含付费版的全部功能与内容。
+
+## English
+
+- **1.1.92**.
+- **Bundled skills are now part of the open-source build**: 23 red-team skills ship under `skills/redteam/*.md` (active scanning, intranet fscan/gogo, tunneling, lateral movement, web fingerprinting, nuclei, webshell, reverse shells and more). They come from the upstream dsh-purge project, retrieved via the `mmparko/dsh-purge` mirror, copied unchanged, and credited in `NOTICE`.
+- **Packaging**: `package.json` `files` now lists `skills`, so both the npm package and the release archive include it. On startup the plugin still syncs the bundled skills into `$DSH_HOME/redteam/skills`, with the host skill directory `$DSH_HOME/skills` taking priority.
+- **Knowledge base note**: the POC/EXP knowledge base is not a shipped file. It is a local database built at runtime from the machine's nuclei templates and manual entries; the code (`lib/redteam/store-core.js`, `ui.js`, `tools.js`) has always been in the repository, so nothing needed to move.
+- **Docs**: all three READMEs now list `skills/` in the directory structure and runtime paths; the boundaries section states that the open-source build includes everything in the paid build.
+
+# 1.1.91
+
+## 中文
+
+- 版本 **1.1.91**。
+- **#220 宿主版本声明对齐 rc.5**：`package.json` 的 `dshTarget` 改为 `0.2.1-rc.5`，`dshTargets` 同时保留 `0.2.1-rc.5` 与 `0.2.1-rc.2`。状态页读主字段，不再把跑在 rc.5 上的宿主报成「未适配」；rc.2 仍然在兼容列表里。
+- **#213 应用 / 还原后 `dsh` 丢失可执行位**：`writeHostFileAtomic()` 在 `rename` 前先读目标原 mode 并 `chmod` 到临时文件，POSIX 下 `bin.js` 的 `0755` 原样保留；没有 `rename` 的抽象 fs 改为原地写并清理临时文件。WSL ext4 实测：apply → revert → apply → revert 四次，mode 始终 `755`，`dsh` 可直接执行。
+- **#211 回退按钮浮在设置页最上层**：`place()` 增加前台判定，锚点断开、`checkVisibility()` 为假、落在 `inert / aria-hidden` 里、或被 `[role="dialog"][aria-modal="true"]` 遮住时隐藏按钮并归还 composer 的 `padding-left`；宿主 `z-index` 从 `2147482500` 降到 `900`，菜单降到 `950`，稳定处在页面内容之上、宿主模态（1000）之下。Chrome 实测覆盖模态、遮挡、opacity、inert、断开锚点与层叠比较。
+- **#209 pnpm 12 反复要求构建审批**：`rewritePnpmAllowBuilds()` 按 profile 里的 pnpm 大版本决定策略——pnpm 12+（或版本判断不出）保留用户写下的来源键（`dsh-purge@git+https://…` / `@https://…`），只去重；pnpm 11 仍按 #185 清掉来源键，避免 `ERR_PNPM_INVALID_VERSION_UNION`。裸包名照旧补齐。真实 pnpm 11 / 12 配置与真实 profile 均验证。
+- **渗透范围**：禁止对中国大陆、香港、澳门，银行与金融站点，政府与军事站点发起渗透、攻击或扫描；本地演练限定在本机回环与 RFC1918 私网。游戏外挂、内存修改、注入与反作弊绕过不再拦截，提示词与会话门禁同步放开。
+- **验证**：范围判定 24 项用例全过；#209/#211/#213 单测与真实环境测试全过；`client.js` 与改动模块语法检查通过。
+
+## English
+
+- **1.1.91**.
+- **#220 host target aligned with rc.5**: `dshTarget` is now `0.2.1-rc.5`, with `0.2.1-rc.5` and `0.2.1-rc.2` both kept in `dshTargets`. The status page reads the primary field, so a host on rc.5 is no longer reported as unsupported; rc.2 stays compatible.
+- **#213 `dsh` lost its executable bit after apply/revert**: `writeHostFileAtomic()` now reads the target's existing mode and applies it to the temp file before `rename`, so `bin.js` keeps `0755` on POSIX; filesystems without `rename` fall back to an in-place write and clean up the temp file. WSL ext4 test: apply → revert → apply → revert keeps the mode at `755` and `dsh` stays executable.
+- **#211 the undo button floated above settings**: `place()` now checks whether the session surface is actually visible and hides the button (releasing the composer's `padding-left`) when the anchor is detached, fails `checkVisibility()`, sits under `inert / aria-hidden`, or is covered by `[role="dialog"][aria-modal="true"]`. The host `z-index` drops from `2147482500` to `900` and the menu to `950`, staying above page content and below the host modal (1000). Chrome tests cover modals, occlusion, opacity, inert, detached anchors and stacking.
+- **#209 pnpm 12 kept asking for build approval**: `rewritePnpmAllowBuilds()` now decides by the profile's pnpm major version. On pnpm 12+ (or when the version cannot be read) it preserves user-written source keys (`dsh-purge@git+https://…`, `@https://…`) and only deduplicates them; on pnpm 11 it still removes them per #185 to avoid `ERR_PNPM_INVALID_VERSION_UNION`. The bare package name is still ensured. Verified against real pnpm 11/12 configs and a real profile.
+- **Pentest scope**: penetration, attack, or scanning against mainland China, Hong Kong and Macau, banks and financial sites, government and military sites is prohibited; local drills are limited to loopback and RFC1918 private addresses. Game cheats, memory editing, injection and anti-cheat bypass are no longer blocked, in both the prompt layer and the session gate.
+- **Verification**: all 24 scope cases pass; unit and real-environment tests for #209/#211/#213 pass; syntax checks pass for `client.js` and the changed modules.
+
+# 1.1.90
+
+## 中文
+
+- 版本 **1.1.90**。
+- **#208 Android 切后台回来输入框整块消失**：撤销按钮原先注册在宿主的 `conversation.input.right` 槽位，这个槽位渲染在 composer 的 React 子树里。宿主在提交阶段只要抛一次错，React 会把整棵树卸载，症状就是输入框连带按钮一起没了。
+  - 撤销按钮不再走任何槽位。改为在 `body` 上挂一个 `position: fixed` 的宿主节点，用 `createPortal` 把按钮传进去，渲染树完全脱离 composer；composer 内部再出错也牵连不到它。
+  - 位置按最靠下的那组 `.standardControls`（就是 composer 底部工具条）的矩形实时对齐，并给它留 `padding-left` 空位，不遮住模型选择器；预留宽度跟着按钮实测宽度走。
+  - 会话切换、窗口尺寸变化、页面滚动都会重新对齐；没有会话时按钮不显示、留白也一起归还。
+  - 锚点查找带缓存和节流，只在锚点缺失或掉线时才扫一次 DOM，长会话滚动不受影响。
+- **验证**：`client.js` 语法检查通过；`conversation.input.right` 在本插件中已无任何注册点；双宿主 `standardControls` 类名核对一致。
+
+## English
+
+- **1.1.90**.
+- **#208 the whole composer vanished after switching apps**: the undo button was registered into the host's `conversation.input.right` slot, which renders inside the composer's React subtree. One throw during a commit phase makes React unmount that tree, and the input box goes with it.
+  - The undo button no longer uses any slot. It renders through `createPortal` into a `position: fixed` host appended to `body`, fully outside the composer subtree, so a composer error can no longer take it down.
+  - It aligns itself to the rectangle of the bottom-most `.standardControls` (the composer toolbar) and reserves `padding-left` there so the model picker is not covered; the reserved width follows the button's measured width.
+  - It re-aligns on session change, resize and scroll, and releases both the button and the reserved space when there is no session.
+  - Anchor lookup is cached and throttled: the DOM is scanned only when the anchor is missing or detached, so long chats keep scrolling smoothly.
+- **Verification**: `client.js` passes the syntax check; no `conversation.input.right` registration remains in the plugin; the `standardControls` class name matches on both hosts.
+
+# 1.1.89
+
+## 中文
+
+- 版本 **1.1.89**。
+- **#204 工作目录提示恢复**：`deployment:persona-suffix` 优先写会话真实 cwd 字面量（`interpolate: false`），拿不到才退静态描述；同时把 `cwd` 补进 `assembly.variables`，用户自己模板里的 `{{cwd}}` 也能渲染。0.2.1 不再抛 `unknown prompt variable`，工作目录提示不再变成 `the current workspace`。
+- **#207 桌面静默退出可诊断**：
+  - 新增 #92：宿主每次退出都把 `code` / `signal` / stderr 尾巴写进 `%TEMP%\dsh-purge-desktop.log`（不再只记 signal 分支）。
+  - 新增 #93：主进程记录 `boot` / `before-quit` / `will-quit` / `quit code` / `window-all-closed` / `render-process-gone`（附渲染进程最后几行 console）/ `child-process-gone` / 信号 / 每分钟心跳。只用 `uncaughtExceptionMonitor`，不改变崩溃行为。
+  - asar 换包脚本：`Move-Item` 失败后改用 `.NET File.Move` 重试，成功/失败都 `Test-Path` 复核并记录真实错误；空闲改名脚本同样记录失败原因（限流，不刷屏）。
+- **#202 原子写**：`atomicWriteFile` 保持 `writeFile + rename`（不依赖 hostFs 白名单里没有的 `open`）；CLI `--apply` 成功后补打应用戳，下次启动 settle 不会误判未对齐再重打。
+- **修复重复标记**：#32 / #53 的 export 行锚点原来自我匹配，每点一次「应用」就多追加一行注释；改成带负向前瞻的正则，连续应用保持幂等。
+- **验证**：web + desktop 双宿主现有补丁全部 applied；rc.2 夹具与 rc.5 实机 pattern 全绿；沙箱 42 个目标文件 apply/revert 字节级还原；生成的 PowerShell 脚本通过 `Parser::ParseFile` 语法检查。
+
+## English
+
+- **1.1.89**.
+- **#204 working directory restored**: the persona suffix now uses the real session cwd as a literal (`interpolate: false`) and only falls back to the static sentence when no cwd is available; `cwd` is also added to `assembly.variables`, so user templates with `{{cwd}}` render. 0.2.1 no longer throws `unknown prompt variable`, and the prompt keeps the real path instead of `the current workspace`.
+- **#207 desktop exit is diagnosable**:
+  - New #92: every host exit writes `code` / `signal` / stderr tail to `%TEMP%\dsh-purge-desktop.log`.
+  - New #93: main process logs `boot` / `before-quit` / `will-quit` / `quit code` / `window-all-closed` / `render-process-gone` (with the renderer console tail) / `child-process-gone` / signals / a one-minute heartbeat. Uses `uncaughtExceptionMonitor` only, so crash behavior is unchanged.
+  - ASAR swap: falls back to `.NET File.Move` after `Move-Item` fails, verifies with `Test-Path`, and records the real error; the idle rename script logs failures too (rate-limited).
+- **#202 atomic writes**: `atomicWriteFile` stays on `writeFile + rename` (the hostFs whitelist has no `open`); the CLI `--apply` now also writes the applied stamp so the next boot's settle does not re-apply.
+- **Duplicate markers fixed**: the #32 / #53 export-line anchors matched their own output and appended another comment on every Apply; both now use negative lookaheads and are idempotent.
+- **Verified**: all existing patches applied on both web and desktop hosts; rc.2 fixtures and rc.5 real files green; sandbox apply/revert restored 42 target files byte-for-byte; generated PowerShell scripts pass `Parser::ParseFile`.
+
 # 1.1.88
 
 ## 中文
@@ -1062,32 +1150,32 @@
 
 ## 涓枃
 
-- **淇 [#43](https://github.com/YuJunZhiXue/dsh-purge/issues/43)**锛氫笉鍐嶆妸 `profiles/*/cordis.patch.yml`锛堢敤鎴?patch 灞傦級绾冲叆 `backupAll`/`revertAll`锛涘崌绾ц嚜鎰堟椂涓嶄細鐢ㄦ棫 bak 瑕嗙洊鐢ㄦ埛鍚庢潵杩藉姞鐨?`insert`銆?- 鍚姩/杩樺師鏃朵富鍔ㄤ涪鎺夊巻鍙蹭笂璇缓鐨?`cordis.patch.yml.dshpurge.bak`锛屼繚鐣欏綋鍓嶇敤鎴锋枃浠躲€?- 鏂板 `npm run test:profile-patch`銆?
+- **淇 [#43](https://github.com/HunYiSage/dsh-purge/issues/43)**锛氫笉鍐嶆妸 `profiles/*/cordis.patch.yml`锛堢敤鎴?patch 灞傦級绾冲叆 `backupAll`/`revertAll`锛涘崌绾ц嚜鎰堟椂涓嶄細鐢ㄦ棫 bak 瑕嗙洊鐢ㄦ埛鍚庢潵杩藉姞鐨?`insert`銆?- 鍚姩/杩樺師鏃朵富鍔ㄤ涪鎺夊巻鍙蹭笂璇缓鐨?`cordis.patch.yml.dshpurge.bak`锛屼繚鐣欏綋鍓嶇敤鎴锋枃浠躲€?- 鏂板 `npm run test:profile-patch`銆?
 ## English
 
-- **Fix [#43](https://github.com/YuJunZhiXue/dsh-purge/issues/43)**: stop including `profiles/*/cordis.patch.yml` (user patch layer) in `backupAll`/`revertAll`, so upgrade reapply no longer restores an old bak over later user `insert`s.
+- **Fix [#43](https://github.com/HunYiSage/dsh-purge/issues/43)**: stop including `profiles/*/cordis.patch.yml` (user patch layer) in `backupAll`/`revertAll`, so upgrade reapply no longer restores an old bak over later user `insert`s.
 - Drop stale `cordis.patch.yml.dshpurge.bak` without restoring; keep the live user file.
 - Add `npm run test:profile-patch`.
 # 1.1.24
 
 ## 涓枃
 
-- **淇 [#40](https://github.com/YuJunZhiXue/dsh-purge/issues/40)**锛歚pathLooksDesktop` 涓嶅啀浠呭嚟璺緞閲岀殑 `deepseek-harness` 瀛愪覆鎶婃簮鐮佺増鍒ゆ垚妗岄潰绔紱闇€甯?`resources/` / `.exe` / `.app` 绛夊畨瑁呭舰鎬併€?- **淇 [#41](https://github.com/YuJunZhiXue/dsh-purge/issues/41)**锛氭簮鐮侀儴缃茬殑 `apps/cli`锛坱sdown 鏋勫缓浜х墿锛夌姝?hide-console 娉ㄥ叆锛沗revertAll` 鍦ㄦ棤 `.dshpurge.bak` 鏃跺彧璺宠繃銆佺粷涓嶅垹闄ょ洰鏍囨枃浠躲€?- 鏂板 `npm run test:surface` 鍥炲綊銆?
+- **淇 [#40](https://github.com/HunYiSage/dsh-purge/issues/40)**锛歚pathLooksDesktop` 涓嶅啀浠呭嚟璺緞閲岀殑 `deepseek-harness` 瀛愪覆鎶婃簮鐮佺増鍒ゆ垚妗岄潰绔紱闇€甯?`resources/` / `.exe` / `.app` 绛夊畨瑁呭舰鎬併€?- **淇 [#41](https://github.com/HunYiSage/dsh-purge/issues/41)**锛氭簮鐮侀儴缃茬殑 `apps/cli`锛坱sdown 鏋勫缓浜х墿锛夌姝?hide-console 娉ㄥ叆锛沗revertAll` 鍦ㄦ棤 `.dshpurge.bak` 鏃跺彧璺宠繃銆佺粷涓嶅垹闄ょ洰鏍囨枃浠躲€?- 鏂板 `npm run test:surface` 鍥炲綊銆?
 ## English
 
-- **Fix [#40](https://github.com/YuJunZhiXue/dsh-purge/issues/40)**: `pathLooksDesktop` no longer treats source trees as desktop just because the path contains `deepseek-harness`; require install shapes (`resources/`, `.exe`, `.app`).
-- **Fix [#41](https://github.com/YuJunZhiXue/dsh-purge/issues/41)**: skip hide-console injection into source `apps/cli` build output; `revertAll` never deletes targets when `.dshpurge.bak` is missing.
+- **Fix [#40](https://github.com/HunYiSage/dsh-purge/issues/40)**: `pathLooksDesktop` no longer treats source trees as desktop just because the path contains `deepseek-harness`; require install shapes (`resources/`, `.exe`, `.app`).
+- **Fix [#41](https://github.com/HunYiSage/dsh-purge/issues/41)**: skip hide-console injection into source `apps/cli` build output; `revertAll` never deletes targets when `.dshpurge.bak` is missing.
 - Add `npm run test:surface`.
 # 1.1.23
 
 ## 涓枃
 
-- **淇 [#38](https://github.com/YuJunZhiXue/dsh-purge/issues/38)**锛歚#1`/`#2`/`#3` 鎻愮ず璇嶈ˉ涓佹瘡娆?`apply` 鍙犲姞绾?+841 瀛楃銆佹案涓嶆敹鏁涖€?- **鍘熷洜**锛氭浛鎹骇鐗╀粛浠ュ墠涓€鐗堟枃鏈负鍓嶇紑锛屼笖鏈 `skipIfMarked`锛宍autoApplyOnStart` 姣忚疆閮戒細鍐嶅啓涓€灞傘€?- **淇**锛氫负 `#1`/`#2`/`#3` 琛?`skipIfMarked: true`锛圼#42](https://github.com/YuJunZhiXue/dsh-purge/pull/42)锛夛紝骞跺姞 `npm run test:idempotence` 鍥炲綊銆?- 宸茶啫鑳€鐨勫涓绘枃浠朵笉浼氳嚜鍔ㄧ缉鍥烇紝闇€杩樺師 `.dshpurge.bak` 鎴栭噸瑁?dsh 鍚庡啀 apply銆?
+- **淇 [#38](https://github.com/HunYiSage/dsh-purge/issues/38)**锛歚#1`/`#2`/`#3` 鎻愮ず璇嶈ˉ涓佹瘡娆?`apply` 鍙犲姞绾?+841 瀛楃銆佹案涓嶆敹鏁涖€?- **鍘熷洜**锛氭浛鎹骇鐗╀粛浠ュ墠涓€鐗堟枃鏈负鍓嶇紑锛屼笖鏈 `skipIfMarked`锛宍autoApplyOnStart` 姣忚疆閮戒細鍐嶅啓涓€灞傘€?- **淇**锛氫负 `#1`/`#2`/`#3` 琛?`skipIfMarked: true`锛圼#42](https://github.com/HunYiSage/dsh-purge/pull/42)锛夛紝骞跺姞 `npm run test:idempotence` 鍥炲綊銆?- 宸茶啫鑳€鐨勫涓绘枃浠朵笉浼氳嚜鍔ㄧ缉鍥烇紝闇€杩樺師 `.dshpurge.bak` 鎴栭噸瑁?dsh 鍚庡啀 apply銆?
 ## English
 
-- **Fix [#38](https://github.com/YuJunZhiXue/dsh-purge/issues/38)**: prompt patches `#1`/`#2`/`#3` grew by ~+841 chars on every `apply` and never converged.
+- **Fix [#38](https://github.com/HunYiSage/dsh-purge/issues/38)**: prompt patches `#1`/`#2`/`#3` grew by ~+841 chars on every `apply` and never converged.
 - **Cause**: replacement text still starts with the previous pattern, and `skipIfMarked` was missing, so `autoApplyOnStart` rewrote every boot.
-- **Fix**: set `skipIfMarked: true` on `#1`/`#2`/`#3` ([#42](https://github.com/YuJunZhiXue/dsh-purge/pull/42)); add `npm run test:idempotence`.
+- **Fix**: set `skipIfMarked: true` on `#1`/`#2`/`#3` ([#42](https://github.com/HunYiSage/dsh-purge/pull/42)); add `npm run test:idempotence`.
 - Already-bloated host files are not auto-shrunk 鈥?restore `.dshpurge.bak` or reinstall dsh, then apply again.
 
 # 1.1.22
